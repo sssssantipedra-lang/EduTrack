@@ -1,0 +1,1297 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#0d1117">
+  <meta name="description" content="Aula Pro — Plataforma de gestión docente">
+  <title>Aula Pro</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+
+<style>
+/* ══════════════════════════════════════════════
+   DESIGN TOKENS
+══════════════════════════════════════════════ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --font: 'Outfit', sans-serif;
+  --sb-bg: #0d1117;
+  --sb-w: 256px;
+  --sb-w-min: 68px;
+  --sb-border: rgba(255,255,255,0.06);
+  --accent: #818cf8;
+  --accent-d: #6366f1;
+  --accent-l: #e0e7ff;
+  --surface: #f1f5f9;
+  --card: #ffffff;
+  --border: #e2e8f0;
+  --text: #0f172a;
+  --text-2: #475569;
+  --text-3: #94a3b8;
+  --ok: #10b981;
+  --warn: #f59e0b;
+  --danger: #ef4444;
+  --info: #3b82f6;
+  --r: 10px;
+  --r-lg: 14px;
+  --t: 0.22s cubic-bezier(.4,0,.2,1);
+}
+html, body { height: 100%; font-family: var(--font); background: var(--surface); color: var(--text); -webkit-font-smoothing: antialiased; }
+
+/* ══════════════════════════════════════════════
+   SCREEN SYSTEM
+══════════════════════════════════════════════ */
+.screen { display: none; width: 100%; min-height: 100vh; }
+.screen.active { display: flex; }
+
+/* ══════════════════════════════════════════════
+   AUTH SCREEN
+══════════════════════════════════════════════ */
+#screen-auth {
+  background: var(--sb-bg);
+  align-items: center; justify-content: center; flex-direction: column;
+  padding: 24px; position: relative; overflow: hidden;
+}
+.auth-orb { position: absolute; border-radius: 50%; filter: blur(90px); pointer-events: none; }
+.auth-card {
+  background: #fff; border-radius: 20px; padding: 38px 40px 42px;
+  width: 430px; max-width: 100%; z-index: 1;
+  box-shadow: 0 32px 64px rgba(0,0,0,0.28), 0 0 0 0.5px rgba(255,255,255,0.06);
+}
+.tab-bar { display: flex; background: #f1f5f9; border-radius: 10px; padding: 4px; margin-bottom: 28px; }
+.tab-btn { flex: 1; padding: 9px; border: none; border-radius: 8px; font-family: var(--font); font-size: 14px; font-weight: 500; color: var(--text-2); cursor: pointer; background: transparent; transition: all var(--t); }
+.tab-btn.active { background: white; color: var(--text); font-weight: 700; box-shadow: 0 1px 4px rgba(0,0,0,0.1); }
+.flabel { display: block; font-size: 12.5px; font-weight: 700; color: #374151; margin-bottom: 6px; }
+.finput { width: 100%; padding: 11px 14px; border: 1.5px solid var(--border); border-radius: var(--r); font-family: var(--font); font-size: 14px; color: var(--text); outline: none; transition: border-color var(--t), box-shadow var(--t); background: white; }
+.finput:focus { border-color: var(--accent-d); box-shadow: 0 0 0 3px rgba(99,102,241,0.1); }
+.finput::placeholder { color: var(--text-3); }
+.fgroup { margin-bottom: 15px; }
+.frow { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.btn-primary { width: 100%; padding: 12px; background: linear-gradient(135deg, var(--accent-d), var(--accent)); color: white; border: none; border-radius: var(--r); font-family: var(--font); font-size: 15px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 14px rgba(99,102,241,0.32); transition: opacity var(--t), transform 0.1s; margin-top: 6px; letter-spacing: 0.1px; }
+.btn-primary:hover { opacity: 0.87; }
+.btn-primary:active { transform: scale(0.99); }
+.btn-primary:disabled { opacity: 0.55; cursor: not-allowed; }
+
+/* ══════════════════════════════════════════════
+   APP LAYOUT
+══════════════════════════════════════════════ */
+#screen-app { flex-direction: row; }
+
+/* Sidebar */
+.sidebar { width: var(--sb-w); min-height: 100vh; background: var(--sb-bg); display: flex; flex-direction: column; flex-shrink: 0; transition: width var(--t); overflow: hidden; position: sticky; top: 0; height: 100vh; }
+.sidebar.mini { width: var(--sb-w-min); }
+.sb-logo { display: flex; align-items: center; gap: 11px; padding: 18px 14px 12px; flex-shrink: 0; }
+.sb-logo-box { width: 34px; height: 34px; background: linear-gradient(135deg, var(--accent-d), var(--accent)); border-radius: 9px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 4px 12px rgba(99,102,241,0.3); }
+.sb-title { font-size: 16px; font-weight: 800; color: white; letter-spacing: -0.4px; white-space: nowrap; transition: opacity var(--t); }
+.sidebar.mini .sb-title { opacity: 0; pointer-events: none; }
+.sb-teacher { margin: 0 10px 10px; padding: 10px 11px; background: rgba(255,255,255,0.045); border: 0.5px solid var(--sb-border); border-radius: 10px; display: flex; align-items: center; gap: 9px; cursor: pointer; transition: background var(--t); overflow: hidden; }
+.sb-teacher:hover { background: rgba(255,255,255,0.075); }
+.sb-teacher-info { min-width: 0; transition: opacity var(--t); }
+.sidebar.mini .sb-teacher-info { opacity: 0; }
+.sb-div { height: 0.5px; background: var(--sb-border); margin: 6px 14px; flex-shrink: 0; }
+.sb-nav { flex: 1; overflow-y: auto; padding: 4px 0 8px; scrollbar-width: none; }
+.sb-nav::-webkit-scrollbar { display: none; }
+.sb-sect { font-size: 10px; font-weight: 700; letter-spacing: 0.9px; color: #334155; text-transform: uppercase; padding: 10px 18px 4px; white-space: nowrap; overflow: hidden; transition: opacity var(--t); }
+.sidebar.mini .sb-sect { opacity: 0; }
+.nav-item { display: flex; align-items: center; gap: 11px; padding: 10px 14px; margin: 1px 8px; border-radius: 8px; cursor: pointer; color: #64748b; transition: background var(--t), color var(--t); white-space: nowrap; overflow: hidden; position: relative; user-select: none; }
+.nav-item:hover { background: rgba(255,255,255,0.06); color: #94a3b8; }
+.nav-item.active { background: rgba(129,140,248,0.15); color: var(--accent); }
+.ni-icon { width: 18px; height: 18px; flex-shrink: 0; }
+.ni-label { font-size: 13.5px; font-weight: 500; }
+.ni-badge { margin-left: auto; background: rgba(129,140,248,0.18); color: var(--accent); font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 99px; flex-shrink: 0; transition: opacity var(--t); }
+.ni-badge.g { background: rgba(16,185,129,0.15); color: var(--ok); }
+.sidebar.mini .ni-badge, .sidebar.mini .ni-label { opacity: 0; }
+/* Tooltips on mini sidebar */
+.sidebar.mini .nav-item::after { content: attr(data-tip); position: absolute; left: calc(var(--sb-w-min) + 4px); background: #1e293b; color: white; font-size: 12px; font-weight: 500; padding: 5px 10px; border-radius: 7px; white-space: nowrap; pointer-events: none; opacity: 0; transition: opacity 0.15s; z-index: 200; box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
+.sidebar.mini .nav-item:hover::after { opacity: 1; }
+.sb-bottom { padding: 12px 8px; flex-shrink: 0; border-top: 0.5px solid var(--sb-border); }
+
+/* Topbar */
+.main { flex: 1; display: flex; flex-direction: column; min-width: 0; overflow: hidden; }
+.topbar { height: 60px; background: white; border-bottom: 0.5px solid var(--border); display: flex; align-items: center; gap: 10px; padding: 0 20px; flex-shrink: 0; position: sticky; top: 0; z-index: 50; }
+.srch-wrap { position: relative; flex: 1; max-width: 380px; }
+.srch-icon { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); color: var(--text-3); pointer-events: none; }
+.srch { width: 100%; padding: 8px 12px 8px 34px; border: 1.5px solid var(--border); border-radius: var(--r); font-family: var(--font); font-size: 13.5px; color: var(--text); background: var(--surface); outline: none; transition: all var(--t); }
+.srch:focus { border-color: var(--accent-d); background: white; box-shadow: 0 0 0 3px rgba(99,102,241,0.1); }
+.srch::placeholder { color: var(--text-3); }
+.tb-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+.ico-btn { width: 36px; height: 36px; border: none; border-radius: var(--r); background: none; cursor: pointer; color: var(--text-2); display: flex; align-items: center; justify-content: center; transition: background var(--t), color var(--t); position: relative; }
+.ico-btn:hover { background: var(--surface); color: var(--text); }
+.notif-dot { position: absolute; top: 7px; right: 7px; width: 8px; height: 8px; background: var(--danger); border-radius: 50%; border: 1.5px solid white; }
+.btn-live { display: flex; align-items: center; gap: 6px; padding: 7px 14px; background: var(--accent-d); color: white; border: none; border-radius: var(--r); font-family: var(--font); font-size: 13px; font-weight: 700; cursor: pointer; transition: opacity var(--t); white-space: nowrap; }
+.btn-live:hover { opacity: 0.84; }
+.av { width: 34px; height: 34px; border-radius: 50%; background: linear-gradient(135deg, var(--accent-d), var(--accent)); color: white; font-size: 13px; font-weight: 800; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; box-shadow: 0 0 0 2px white, 0 0 0 3.5px var(--accent-d); transition: box-shadow var(--t); }
+.av:hover { box-shadow: 0 0 0 2px white, 0 0 0 4.5px rgba(99,102,241,0.5); }
+
+/* Sections */
+.pg { flex: 1; overflow-y: auto; padding: 26px 22px; scrollbar-width: thin; scrollbar-color: #cbd5e1 transparent; }
+.pg::-webkit-scrollbar { width: 5px; }
+.pg::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+.sec { display: none; }
+.sec.active { display: block; animation: si .22s ease; }
+@keyframes si { from { opacity: 0; transform: translateY(7px); } to { opacity: 1; transform: translateY(0); } }
+
+/* ══════════════════════════════════════════════
+   DASHBOARD — COMPONENTS
+══════════════════════════════════════════════ */
+
+/* Session banner */
+.session-banner { background: linear-gradient(135deg, var(--accent-d) 0%, #4f46e5 60%, #7c3aed 100%); border-radius: var(--r-lg); padding: 16px 20px; margin-bottom: 20px; display: flex; align-items: center; gap: 16px; overflow: hidden; position: relative; }
+.session-banner::before { content: ''; position: absolute; inset: 0; background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.04'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E"); }
+.session-pulse { width: 10px; height: 10px; border-radius: 50%; background: #4ade80; flex-shrink: 0; box-shadow: 0 0 0 0 rgba(74,222,128,0.4); animation: pulse 2s infinite; }
+@keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(74,222,128,0.5); } 70% { box-shadow: 0 0 0 10px rgba(74,222,128,0); } 100% { box-shadow: 0 0 0 0 rgba(74,222,128,0); } }
+.session-banner .prog-bar { flex: 1; height: 5px; background: rgba(255,255,255,0.2); border-radius: 3px; overflow: hidden; max-width: 180px; }
+.session-banner .prog-fill { height: 100%; background: rgba(255,255,255,0.85); border-radius: 3px; transition: width 1s linear; }
+.no-session-banner { background: linear-gradient(135deg, #1e293b, #0f172a); border-radius: var(--r-lg); padding: 14px 20px; margin-bottom: 20px; display: flex; align-items: center; gap: 14px; }
+
+/* Stats grid */
+.stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(148px,1fr)); gap: 14px; margin-bottom: 20px; }
+.stat-card { background: white; border: 0.5px solid var(--border); border-radius: var(--r-lg); padding: 18px; transition: box-shadow var(--t), transform var(--t); cursor: default; }
+.stat-card:hover { box-shadow: 0 6px 20px rgba(0,0,0,0.07); transform: translateY(-1px); }
+.stat-ico { width: 34px; height: 34px; border-radius: 9px; display: flex; align-items: center; justify-content: center; margin-bottom: 14px; }
+.stat-lbl { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.7px; color: var(--text-3); margin-bottom: 4px; }
+.stat-val { font-size: 27px; font-weight: 800; color: var(--text); line-height: 1; }
+.stat-hint { font-size: 11.5px; color: var(--text-2); margin-top: 5px; display: flex; align-items: center; gap: 4px; }
+
+/* Dash grid */
+.dash-grid { display: grid; grid-template-columns: 1fr 1fr 320px; gap: 16px; align-items: start; }
+@media(max-width:1100px) { .dash-grid { grid-template-columns: 1fr 1fr; } .dash-col3 { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1fr; gap: 16px; } }
+@media(max-width:720px) { .dash-grid { grid-template-columns: 1fr; } .dash-col3 { grid-template-columns: 1fr; } }
+
+/* Cards */
+.card { background: white; border: 0.5px solid var(--border); border-radius: var(--r-lg); padding: 18px 20px; }
+.card-hd { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+.card-ttl { font-size: 13.5px; font-weight: 700; color: var(--text); display: flex; align-items: center; gap: 7px; }
+.card-lnk { font-size: 12px; font-weight: 600; color: var(--accent-d); cursor: pointer; background: none; border: none; font-family: var(--font); padding: 0; }
+.card-lnk:hover { opacity: 0.7; }
+
+/* Schedule items */
+.sch-item { display: flex; align-items: center; gap: 11px; padding: 9px 11px; border-radius: 9px; margin-bottom: 5px; border: 0.5px solid transparent; cursor: pointer; transition: background var(--t); }
+.sch-item:hover { background: var(--surface); border-color: var(--border); }
+.sch-item.current-class { background: #f5f3ff; border-color: #ddd6fe; }
+.sch-stripe { width: 3px; min-height: 36px; border-radius: 2px; flex-shrink: 0; }
+.sch-info { flex: 1; min-width: 0; }
+.sch-subj { font-size: 13px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sch-room { font-size: 11px; color: var(--text-3); margin-top: 1px; }
+.sch-meta { text-align: right; flex-shrink: 0; }
+.sch-time { font-size: 12px; font-weight: 700; color: var(--text); }
+.sch-st { font-size: 10.5px; font-weight: 600; margin-top: 2px; }
+
+/* Upcoming events */
+.ev-item { display: flex; gap: 12px; align-items: flex-start; padding: 10px 0; border-bottom: 0.5px solid var(--border); cursor: pointer; }
+.ev-item:last-child { border-bottom: none; padding-bottom: 0; }
+.ev-dot-col { display: flex; flex-direction: column; align-items: center; gap: 0; padding-top: 3px; }
+.ev-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+.ev-line { width: 1px; flex: 1; background: var(--border); margin-top: 4px; min-height: 12px; }
+.ev-info { flex: 1; min-width: 0; }
+.ev-name { font-size: 12.5px; font-weight: 600; color: var(--text); }
+.ev-time { font-size: 11px; color: var(--text-3); margin-top: 2px; }
+
+/* Alert items */
+.alert-card { padding: 10px 12px; border-radius: 8px; margin-bottom: 7px; border-left: 3px solid; cursor: pointer; transition: opacity var(--t); }
+.alert-card:hover { opacity: 0.8; }
+.alert-card .an { font-size: 12.5px; font-weight: 700; }
+.alert-card .ad { font-size: 11.5px; margin-top: 2px; }
+
+/* Task list */
+.task-item { display: flex; align-items: center; gap: 9px; padding: 8px 0; border-bottom: 0.5px solid var(--border); cursor: pointer; transition: opacity var(--t); }
+.task-item:last-child { border-bottom: none; }
+.task-item:hover { opacity: 0.75; }
+.task-cb { width: 16px; height: 16px; border-radius: 4px; border: 1.5px solid var(--border); display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all var(--t); }
+.task-cb.checked { background: var(--ok); border-color: var(--ok); }
+.task-txt { font-size: 13px; color: var(--text); flex: 1; transition: all var(--t); }
+.task-txt.done { text-decoration: line-through; color: var(--text-3); }
+.task-pri { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.task-add-btn { width: 100%; padding: 8px; background: var(--surface); border: 0.5px dashed #cbd5e1; border-radius: 8px; font-family: var(--font); font-size: 13px; color: var(--text-3); cursor: pointer; transition: all var(--t); display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: 8px; }
+.task-add-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-l); }
+
+/* ══════════════════════════════════════════════
+   NOTIFICATION DRAWER
+══════════════════════════════════════════════ */
+.notif-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.3); z-index: 200; opacity: 0; pointer-events: none; transition: opacity var(--t); }
+.notif-overlay.open { opacity: 1; pointer-events: all; }
+.notif-drawer { position: fixed; top: 0; right: 0; height: 100vh; width: 360px; max-width: 90vw; background: white; z-index: 201; box-shadow: -8px 0 32px rgba(0,0,0,0.15); transform: translateX(100%); transition: transform var(--t); display: flex; flex-direction: column; }
+.notif-drawer.open { transform: translateX(0); }
+.nd-head { padding: 20px 20px 16px; border-bottom: 0.5px solid var(--border); display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+.nd-body { flex: 1; overflow-y: auto; padding: 16px; scrollbar-width: thin; }
+.nd-item { padding: 12px 14px; border-radius: 10px; background: var(--surface); border: 0.5px solid var(--border); margin-bottom: 8px; cursor: pointer; transition: background var(--t); }
+.nd-item:hover { background: #e8edf3; }
+.nd-item.unread { border-left: 3px solid var(--accent-d); background: var(--accent-l); }
+.nd-item.unread:hover { background: #c7d2fe; }
+
+/* ══════════════════════════════════════════════
+   ADD TASK MODAL
+══════════════════════════════════════════════ */
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 300; display: flex; align-items: center; justify-content: center; padding: 24px; opacity: 0; pointer-events: none; transition: opacity var(--t); }
+.modal-overlay.open { opacity: 1; pointer-events: all; }
+.modal { background: white; border-radius: 18px; padding: 28px; width: 440px; max-width: 100%; box-shadow: 0 24px 60px rgba(0,0,0,0.2); transform: scale(0.95) translateY(10px); transition: transform var(--t); }
+.modal-overlay.open .modal { transform: scale(1) translateY(0); }
+
+/* ══════════════════════════════════════════════
+   MODULE PLACEHOLDERS
+══════════════════════════════════════════════ */
+.placeholder { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 64px 32px; background: white; border: 0.5px solid var(--border); border-radius: var(--r-lg); min-height: 340px; gap: 12px; }
+.ph-ico { width: 68px; height: 68px; border-radius: 18px; display: flex; align-items: center; justify-content: center; margin-bottom: 4px; }
+.ph-title { font-size: 18px; font-weight: 800; color: var(--text); }
+.ph-desc { font-size: 14px; color: var(--text-2); max-width: 320px; line-height: 1.65; }
+.ph-pills { display: flex; gap: 7px; flex-wrap: wrap; justify-content: center; margin-top: 4px; }
+.ph-pill { padding: 5px 12px; border-radius: 99px; font-size: 12px; font-weight: 600; background: var(--surface); border: 0.5px solid var(--border); color: var(--text-2); }
+.ph-pill.curr { background: var(--accent-l); border-color: #a5b4fc; color: var(--accent-d); }
+.btn-dev { padding: 10px 24px; border-radius: var(--r); border: none; font-family: var(--font); font-size: 14px; font-weight: 700; cursor: pointer; color: white; transition: opacity var(--t); }
+.btn-dev:hover { opacity: 0.8; }
+
+/* ══════════════════════════════════════════════
+   PROFILE SECTION
+══════════════════════════════════════════════ */
+.profile-grid { display: grid; grid-template-columns: 220px 1fr; gap: 16px; align-items: start; }
+@media(max-width:700px) { .profile-grid { grid-template-columns: 1fr; } }
+
+/* ══════════════════════════════════════════════
+   TOAST & LOADING
+══════════════════════════════════════════════ */
+.toast { position: fixed; bottom: 20px; right: 20px; background: #1e293b; color: white; padding: 11px 18px; border-radius: 10px; font-size: 13.5px; font-weight: 500; opacity: 0; transform: translateY(14px); transition: all 0.28s cubic-bezier(.34,1.56,.64,1); z-index: 9999; pointer-events: none; max-width: 300px; line-height: 1.4; box-shadow: 0 8px 24px rgba(0,0,0,0.25); }
+.toast.on { opacity: 1; transform: translateY(0); }
+
+.spin { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.4); border-top-color: white; border-radius: 50%; animation: spin 0.7s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Page header */
+.pg-hd { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 22px; }
+.pg-title { font-size: 21px; font-weight: 800; color: var(--text); letter-spacing: -0.4px; }
+.pg-sub { font-size: 13px; color: var(--text-2); margin-top: 2px; }
+
+/* Misc utils */
+.gap8 { display: flex; flex-direction: column; gap: 8px; }
+.flex-center { display: flex; align-items: center; }
+.badge { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 99px; font-size: 10.5px; font-weight: 700; }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════
+     SCREEN: AUTH
+═══════════════════════════════════════════ -->
+<div id="screen-auth" class="screen active">
+  <div class="auth-orb" style="width:500px;height:500px;background:rgba(99,102,241,0.07);top:-120px;right:-80px;animation:none;"></div>
+  <div class="auth-orb" style="width:380px;height:380px;background:rgba(16,185,129,0.04);bottom:-100px;left:-60px;animation:none;"></div>
+
+  <!-- Brand -->
+  <div style="display:flex;align-items:center;gap:13px;margin-bottom:30px;z-index:1;">
+    <div style="width:46px;height:46px;background:linear-gradient(135deg,var(--accent-d),var(--accent));border-radius:13px;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 24px rgba(99,102,241,0.4);">
+      <i data-lucide="graduation-cap" style="width:22px;height:22px;color:white;"></i>
+    </div>
+    <div>
+      <div style="font-size:24px;font-weight:800;color:white;letter-spacing:-0.6px;line-height:1;">Aula Pro</div>
+      <div style="font-size:12px;color:#64748b;margin-top:1px;">Plataforma de gestión docente</div>
+    </div>
+  </div>
+
+  <!-- Card -->
+  <div class="auth-card">
+    <div class="tab-bar" role="tablist">
+      <button class="tab-btn active" id="tab-login" onclick="switchTab('login')">Iniciar sesión</button>
+      <button class="tab-btn" id="tab-reg" onclick="switchTab('reg')">Registrarse</button>
+    </div>
+
+    <!-- LOGIN -->
+    <div id="form-login">
+      <div id="auth-error" style="display:none;padding:10px 14px;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;font-size:13px;color:#991b1b;margin-bottom:14px;"></div>
+      <div class="fgroup">
+        <label class="flabel" for="l-email">Correo electrónico</label>
+        <input class="finput" id="l-email" type="email" placeholder="profesor@centro.es" value="demo@aulapro.es" autocomplete="email">
+      </div>
+      <div class="fgroup">
+        <label class="flabel" for="l-pass">Contraseña</label>
+        <input class="finput" id="l-pass" type="password" placeholder="••••••••" value="demo1234" autocomplete="current-password">
+      </div>
+      <div style="text-align:right;margin-bottom:20px;margin-top:-6px;">
+        <span style="font-size:12.5px;color:var(--accent-d);cursor:pointer;font-weight:600;" onclick="toast('Conecta Supabase para activar esta función')">¿Olvidaste tu contraseña?</span>
+      </div>
+      <button class="btn-primary" id="btn-login" onclick="handleLogin()">
+        Entrar al aula →
+      </button>
+      <p style="text-align:center;font-size:12px;color:var(--text-3);margin-top:16px;">Demo activo — las credenciales están precargadas</p>
+    </div>
+
+    <!-- REGISTER -->
+    <div id="form-reg" style="display:none;">
+      <div class="frow fgroup">
+        <div><label class="flabel" for="r-nombre">Nombre</label><input class="finput" id="r-nombre" type="text" placeholder="Ana"></div>
+        <div><label class="flabel" for="r-apell">Apellidos</label><input class="finput" id="r-apell" type="text" placeholder="García Ruiz"></div>
+      </div>
+      <div class="fgroup"><label class="flabel" for="r-email">Correo</label><input class="finput" id="r-email" type="email" placeholder="profesor@centro.es"></div>
+      <div class="fgroup"><label class="flabel" for="r-centro">Centro educativo</label><input class="finput" id="r-centro" type="text" placeholder="IES Ejemplo"></div>
+      <div class="fgroup"><label class="flabel" for="r-espec">Especialidad</label><input class="finput" id="r-espec" type="text" placeholder="Matemáticas, Lengua…"></div>
+      <div class="fgroup"><label class="flabel" for="r-pass">Contraseña</label><input class="finput" id="r-pass" type="password" placeholder="Mínimo 8 caracteres"></div>
+      <button class="btn-primary" id="btn-reg" onclick="handleRegister()">Crear cuenta</button>
+    </div>
+  </div>
+
+  <p style="color:#1e293b;font-size:12px;margin-top:22px;z-index:1;">© 2025 Aula Pro &nbsp;·&nbsp;<span style="color:var(--accent);cursor:pointer;">Política de privacidad</span></p>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     SCREEN: APP
+═══════════════════════════════════════════ -->
+<div id="screen-app" class="screen">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar" aria-label="Navegación principal">
+    <div class="sb-logo">
+      <div class="sb-logo-box"><i data-lucide="graduation-cap" style="width:17px;height:17px;color:white;"></i></div>
+      <span class="sb-title">Aula Pro</span>
+    </div>
+
+    <div class="sb-teacher" onclick="nav('profile')" title="Mi perfil">
+      <div class="av" style="width:32px;height:32px;font-size:12px;flex-shrink:0;" id="sb-av">AG</div>
+      <div class="sb-teacher-info">
+        <div style="font-size:13px;font-weight:700;color:#e2e8f0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" id="sb-name">Ana García</div>
+        <div style="font-size:11px;color:#475569;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" id="sb-sub">Matemáticas · IES Ejemplo</div>
+      </div>
+    </div>
+
+    <div class="sb-div"></div>
+
+    <nav class="sb-nav">
+      <div class="sb-sect">Principal</div>
+      <div class="nav-item active" onclick="nav('dashboard')" data-s="dashboard" data-tip="Inicio">
+        <i data-lucide="layout-dashboard" class="ni-icon"></i><span class="ni-label">Inicio</span>
+      </div>
+      <div class="nav-item" onclick="nav('classes')" data-s="classes" data-tip="Clases">
+        <i data-lucide="users" class="ni-icon"></i><span class="ni-label">Gestor de Clases</span>
+        <span class="ni-badge" id="badge-classes">5</span>
+      </div>
+      <div class="nav-item" onclick="nav('agenda')" data-s="agenda" data-tip="Agenda">
+        <i data-lucide="calendar-days" class="ni-icon"></i><span class="ni-label">Agenda y Horario</span>
+      </div>
+
+      <div class="sb-sect" style="margin-top:6px;">Evaluación</div>
+      <div class="nav-item" onclick="nav('notebook')" data-s="notebook" data-tip="Cuaderno IA">
+        <i data-lucide="book-open-check" class="ni-icon"></i><span class="ni-label">Cuaderno Docente</span>
+        <span class="ni-badge">IA</span>
+      </div>
+
+      <div class="sb-sect" style="margin-top:6px;">Herramientas</div>
+      <div class="nav-item" onclick="nav('classroom')" data-s="classroom" data-tip="Aula Live">
+        <i data-lucide="monitor-play" class="ni-icon"></i><span class="ni-label">Gestor de Aula</span>
+        <span class="ni-badge g">Live</span>
+      </div>
+
+      <div class="sb-div" style="margin:10px 14px 6px;"></div>
+      <div class="nav-item" onclick="nav('profile')" data-s="profile" data-tip="Perfil">
+        <i data-lucide="user-circle" class="ni-icon"></i><span class="ni-label">Mi Perfil</span>
+      </div>
+      <div class="nav-item" onclick="handleLogout()" data-tip="Salir">
+        <i data-lucide="log-out" class="ni-icon"></i><span class="ni-label">Cerrar sesión</span>
+      </div>
+    </nav>
+
+    <div class="sb-bottom">
+      <div style="font-size:10.5px;color:#1e293b;text-align:center;white-space:nowrap;overflow:hidden;">v1.0 · Paso 3 completado</div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="main">
+    <!-- TOPBAR -->
+    <header class="topbar">
+      <button class="ico-btn" onclick="toggleSidebar()" aria-label="Colapsar menú">
+        <i data-lucide="panel-left" style="width:18px;height:18px;"></i>
+      </button>
+
+      <div class="srch-wrap">
+        <span class="srch-icon"><i data-lucide="search" style="width:15px;height:15px;"></i></span>
+        <input class="srch" type="search" placeholder="Buscar alumnos, clases, rúbricas…" id="global-search" oninput="handleSearch(this.value)">
+      </div>
+
+      <div class="tb-actions">
+        <button class="ico-btn" onclick="toggleNotifs()" aria-label="Notificaciones" id="notif-btn">
+          <i data-lucide="bell" style="width:18px;height:18px;"></i>
+          <span class="notif-dot" id="notif-dot" aria-hidden="true"></span>
+        </button>
+        <button class="btn-live" onclick="nav('classroom')">
+          <i data-lucide="monitor-play" style="width:15px;height:15px;"></i>Aula en directo
+        </button>
+        <div class="av" id="top-av" onclick="nav('profile')" title="Mi perfil" aria-label="Perfil">AG</div>
+      </div>
+    </header>
+
+    <!-- PAGE CONTENT -->
+    <div class="pg">
+
+      <!-- ══════════════════════
+           DASHBOARD
+      ══════════════════════ -->
+      <section id="sec-dashboard" class="sec active">
+
+        <!-- Page header with live clock -->
+        <div class="pg-hd">
+          <div>
+            <h1 class="pg-title" id="dash-greeting">Buenos días, Ana 👋</h1>
+            <p class="pg-sub" id="dash-date">Cargando…</p>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;background:white;border:0.5px solid var(--border);border-radius:10px;padding:9px 16px;flex-shrink:0;">
+            <i data-lucide="clock" style="width:15px;height:15px;color:var(--accent-d);"></i>
+            <span style="font-size:14px;font-weight:800;color:var(--text);" id="clock">--:--</span>
+          </div>
+        </div>
+
+        <!-- SESSION BANNER (dynamic) -->
+        <div id="session-banner"></div>
+
+        <!-- STATS -->
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-ico" style="background:#ede9fe;"><i data-lucide="book" style="width:17px;height:17px;color:var(--accent-d);"></i></div>
+            <div class="stat-lbl">Clases hoy</div>
+            <div class="stat-val" id="stat-classes">4</div>
+            <div class="stat-hint" style="color:var(--ok);" id="stat-classes-hint"><i data-lucide="clock" style="width:11px;height:11px;"></i> Próxima en 32 min</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-ico" style="background:#dbeafe;"><i data-lucide="users" style="width:17px;height:17px;color:var(--info);"></i></div>
+            <div class="stat-lbl">Alumnos</div>
+            <div class="stat-val" id="stat-students">127</div>
+            <div class="stat-hint" id="stat-students-hint">en 5 grupos activos</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-ico" style="background:#fef3c7;"><i data-lucide="clipboard-list" style="width:17px;height:17px;color:var(--warn);"></i></div>
+            <div class="stat-lbl">Pendientes</div>
+            <div class="stat-val" id="stat-tasks">0</div>
+            <div class="stat-hint" style="color:var(--warn);" id="stat-tasks-hint">cargando…</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-ico" style="background:#dcfce7;"><i data-lucide="bar-chart-3" style="width:17px;height:17px;color:var(--ok);"></i></div>
+            <div class="stat-lbl">Media trimestre</div>
+            <div class="stat-val">89%</div>
+            <div class="stat-hint" style="color:var(--ok);"><i data-lucide="trending-up" style="width:11px;height:11px;"></i> +4% vs anterior</div>
+          </div>
+        </div>
+
+        <!-- MAIN DASHBOARD GRID -->
+        <div class="dash-grid">
+
+          <!-- COL 1: Schedule -->
+          <div class="card">
+            <div class="card-hd">
+              <div class="card-ttl"><i data-lucide="calendar-days" style="width:14px;height:14px;color:var(--accent-d);"></i>Horario de hoy</div>
+              <button class="card-lnk" onclick="nav('agenda')">Ver agenda →</button>
+            </div>
+            <div id="schedule-list" class="gap8"></div>
+            <div style="display:flex;gap:8px;margin-top:14px;padding-top:12px;border-top:0.5px solid var(--border);">
+              <button onclick="nav('classroom')" style="flex:1;padding:8px;background:var(--accent-d);color:white;border:none;border-radius:8px;font-family:var(--font);font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;"><i data-lucide="monitor-play" style="width:14px;height:14px;"></i>Abrir aula</button>
+              <button onclick="nav('notebook')" style="flex:1;padding:8px;background:var(--surface);color:var(--text);border:0.5px solid var(--border);border-radius:8px;font-family:var(--font);font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;"><i data-lucide="book-open-check" style="width:14px;height:14px;"></i>Evaluar</button>
+            </div>
+          </div>
+
+          <!-- COL 2: Events + Alerts -->
+          <div style="display:flex;flex-direction:column;gap:14px;">
+            <!-- Upcoming events -->
+            <div class="card">
+              <div class="card-hd">
+                <div class="card-ttl"><i data-lucide="zap" style="width:14px;height:14px;color:var(--warn);"></i>Próximos eventos</div>
+                <button class="card-lnk" onclick="nav('agenda')">Ver todo →</button>
+              </div>
+              <div id="events-list"></div>
+            </div>
+            <!-- Student alerts -->
+            <div class="card">
+              <div class="card-hd">
+                <div class="card-ttl"><i data-lucide="alert-triangle" style="width:14px;height:14px;color:var(--warn);"></i>Alertas de alumnos</div>
+                <span class="badge" style="background:rgba(245,158,11,0.12);color:#b45309;" id="alerts-count">2</span>
+              </div>
+              <div id="alerts-list"></div>
+              <div style="margin-top:10px;text-align:center;"><button class="card-lnk" onclick="nav('classes')">Ver todos los alumnos →</button></div>
+            </div>
+          </div>
+
+          <!-- COL 3: Tasks -->
+          <div class="dash-col3">
+            <div class="card" style="height:fit-content;">
+              <div class="card-hd">
+                <div class="card-ttl"><i data-lucide="check-square-2" style="width:14px;height:14px;color:var(--accent-d);"></i>Tareas</div>
+                <span style="font-size:11px;font-weight:700;color:var(--text-3);" id="tasks-done-label">0/0</span>
+              </div>
+              <div id="tasks-list" class="gap8" style="gap:0;"></div>
+              <button class="task-add-btn" onclick="openAddTask()">
+                <i data-lucide="plus" style="width:14px;height:14px;"></i>Añadir tarea
+              </button>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- ══ GESTOR DE CLASES ══ -->
+      <section id="sec-classes" class="sec">
+        <div class="pg-hd"><div><h1 class="pg-title">Gestor de Clases</h1><p class="pg-sub">Crea y administra tus grupos de alumnos</p></div></div>
+        <div class="placeholder">
+          <div class="ph-ico" style="background:#dbeafe;"><i data-lucide="users" style="width:32px;height:32px;color:var(--info);"></i></div>
+          <div class="ph-title">Módulo en preparación</div>
+          <p class="ph-desc">Lista de grupos, ficha de alumno con historial de evaluaciones, importación desde CSV y alertas individuales.</p>
+          <div class="ph-pills"><span class="ph-pill">✓ Paso 1</span><span class="ph-pill">✓ Paso 2</span><span class="ph-pill">✓ Paso 3</span><span class="ph-pill curr">→ Paso 4</span></div>
+          <button class="btn-dev" style="background:var(--info);" onclick="toast('✅ Se programará en el Paso 4')">Próximamente · Paso 4</button>
+        </div>
+      </section>
+
+      <!-- ══ AGENDA ══ -->
+      <section id="sec-agenda" class="sec">
+        <div class="pg-hd"><div><h1 class="pg-title">Agenda y Horario</h1><p class="pg-sub">Calendario interactivo y bloques configurables</p></div></div>
+        <div class="placeholder">
+          <div class="ph-ico" style="background:#ede9fe;"><i data-lucide="calendar-days" style="width:32px;height:32px;color:#8b5cf6;"></i></div>
+          <div class="ph-title">Módulo en preparación</div>
+          <p class="ph-desc">Vista mensual y semanal, bloques de tiempo arrastrables, integración con eventos y reuniones.</p>
+          <div class="ph-pills"><span class="ph-pill">✓ Paso 1</span><span class="ph-pill">✓ Paso 2</span><span class="ph-pill">✓ Paso 3</span><span class="ph-pill curr">→ Paso 4</span></div>
+          <button class="btn-dev" style="background:#8b5cf6;" onclick="toast('✅ Se programará en el Paso 4')">Próximamente · Paso 4</button>
+        </div>
+      </section>
+
+      <!-- ══ CUADERNO IA ══ -->
+      <section id="sec-notebook" class="sec">
+        <div class="pg-hd"><div><h1 class="pg-title">Cuaderno Docente <span style="font-size:13px;background:var(--accent-l);color:var(--accent-d);padding:3px 10px;border-radius:99px;font-weight:800;vertical-align:middle;">IA</span></h1><p class="pg-sub">Rúbricas inteligentes y dianas de evaluación</p></div></div>
+        <div class="placeholder">
+          <div class="ph-ico" style="background:var(--accent-l);"><i data-lucide="book-open-check" style="width:32px;height:32px;color:var(--accent-d);"></i></div>
+          <div class="ph-title">El núcleo de la evaluación</div>
+          <p class="ph-desc">Crea rúbricas y dianas interactivas. Genera evaluaciones automáticamente con IA y guarda resultados en el perfil del alumno.</p>
+          <div class="ph-pills"><span class="ph-pill">✓ Paso 1–3</span><span class="ph-pill">Paso 4</span><span class="ph-pill curr">→ Paso 5 (IA)</span></div>
+          <button class="btn-dev" style="background:var(--accent-d);" onclick="toast('✅ Se programará en el Paso 5 con integración de API de IA')">Próximamente · Paso 5</button>
+        </div>
+      </section>
+
+      <!-- ══ GESTOR DE AULA ══ -->
+      <section id="sec-classroom" class="sec">
+        <div class="pg-hd"><div><h1 class="pg-title">Gestor de Aula <span style="font-size:12px;background:rgba(16,185,129,0.1);color:#059669;padding:3px 9px;border-radius:99px;font-weight:800;vertical-align:middle;">LIVE</span></h1><p class="pg-sub">Vista a pantalla completa con widgets interactivos</p></div></div>
+        <div class="placeholder">
+          <div class="ph-ico" style="background:#dcfce7;"><i data-lucide="monitor-play" style="width:32px;height:32px;color:var(--ok);"></i></div>
+          <div class="ph-title">ClassroomScreen integrado</div>
+          <p class="ph-desc">Sonómetro con micrófono real, ruleta aleatoria de alumnos, pizarra digital con Canvas (dibujo, texto, imágenes).</p>
+          <div class="ph-pills"><span class="ph-pill">✓ Paso 1–3</span><span class="ph-pill">Paso 4–5</span><span class="ph-pill curr">→ Paso 6 (Live)</span></div>
+          <button class="btn-dev" style="background:var(--ok);" onclick="toast('✅ Se programará en el Paso 6 — el módulo más visual')">Próximamente · Paso 6</button>
+        </div>
+      </section>
+
+      <!-- ══ PERFIL ══ -->
+      <section id="sec-profile" class="sec">
+        <div class="pg-hd"><div><h1 class="pg-title">Mi Perfil</h1><p class="pg-sub">Datos personales y configuración</p></div></div>
+        <div class="profile-grid">
+          <div class="card" style="text-align:center;padding:28px 20px;">
+            <div class="av" style="width:72px;height:72px;font-size:26px;font-weight:800;margin:0 auto 14px;" id="prof-av">AG</div>
+            <div style="font-size:15px;font-weight:800;color:var(--text);" id="prof-name">Ana García Ruiz</div>
+            <div style="font-size:12.5px;color:var(--text-2);margin-top:3px;" id="prof-sub">Matemáticas</div>
+            <div style="font-size:12px;color:var(--text-3);margin-top:2px;">IES Ejemplo</div>
+            <div style="margin-top:14px;padding-top:12px;border-top:0.5px solid var(--border);">
+              <div style="font-size:11px;color:var(--text-3);" id="prof-email">demo@aulapro.es</div>
+              <div style="font-size:11.5px;color:var(--ok);margin-top:5px;font-weight:700;">● Sesión activa</div>
+            </div>
+            <button onclick="toast('📷 Subida de avatar disponible al conectar Supabase Storage')" style="width:100%;margin-top:14px;padding:8px;background:var(--surface);border:0.5px solid var(--border);border-radius:8px;font-family:var(--font);font-size:12.5px;font-weight:600;color:var(--text-2);cursor:pointer;">Cambiar foto</button>
+          </div>
+          <div class="card">
+            <div class="card-hd"><div class="card-ttl"><i data-lucide="pencil" style="width:14px;height:14px;color:var(--accent-d);"></i>Editar datos</div></div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+              <div class="fgroup"><label class="flabel">Nombre</label><input class="finput" type="text" id="pf-nombre" value="Ana"></div>
+              <div class="fgroup"><label class="flabel">Apellidos</label><input class="finput" type="text" id="pf-apell" value="García Ruiz"></div>
+              <div class="fgroup"><label class="flabel">Correo</label><input class="finput" type="email" id="pf-email" value="demo@aulapro.es"></div>
+              <div class="fgroup"><label class="flabel">Teléfono</label><input class="finput" type="tel" placeholder="+34 600 000 000"></div>
+              <div class="fgroup"><label class="flabel">Centro educativo</label><input class="finput" type="text" id="pf-centro" value="IES Ejemplo"></div>
+              <div class="fgroup"><label class="flabel">Especialidad</label><input class="finput" type="text" id="pf-espec" value="Matemáticas"></div>
+            </div>
+            <div style="margin-top:4px;padding-top:14px;border-top:0.5px solid var(--border);display:flex;gap:10px;">
+              <button onclick="saveProfile()" style="padding:10px 24px;background:var(--accent-d);color:white;border:none;border-radius:8px;font-family:var(--font);font-size:13.5px;font-weight:700;cursor:pointer;">Guardar cambios</button>
+              <button onclick="toast('🔑 Cambio de contraseña disponible con Supabase Auth')" style="padding:10px 20px;background:var(--surface);color:var(--text-2);border:0.5px solid var(--border);border-radius:8px;font-family:var(--font);font-size:13.5px;font-weight:600;cursor:pointer;">Cambiar contraseña</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </div><!-- /pg -->
+  </div><!-- /main -->
+</div><!-- /screen-app -->
+
+<!-- ═══════════════════════════════════════════
+     NOTIFICATION DRAWER
+═══════════════════════════════════════════ -->
+<div class="notif-overlay" id="notif-overlay" onclick="closeNotifs()"></div>
+<div class="notif-drawer" id="notif-drawer" aria-label="Panel de notificaciones">
+  <div class="nd-head">
+    <div style="font-size:15px;font-weight:800;color:var(--text);">Notificaciones</div>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <button onclick="markAllRead()" style="font-size:12px;font-weight:600;color:var(--accent-d);background:none;border:none;cursor:pointer;font-family:var(--font);">Marcar todo leído</button>
+      <button class="ico-btn" onclick="closeNotifs()"><i data-lucide="x" style="width:17px;height:17px;"></i></button>
+    </div>
+  </div>
+  <div class="nd-body" id="notif-list"></div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     ADD TASK MODAL
+═══════════════════════════════════════════ -->
+<div class="modal-overlay" id="task-modal-overlay" onclick="closeAddTask(event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:22px;">
+      <div style="font-size:16px;font-weight:800;color:var(--text);">Nueva tarea</div>
+      <button class="ico-btn" onclick="closeAddTask()"><i data-lucide="x" style="width:17px;height:17px;"></i></button>
+    </div>
+    <div class="fgroup">
+      <label class="flabel" for="task-text-input">Descripción</label>
+      <input class="finput" id="task-text-input" type="text" placeholder="p.e. Corregir exámenes 3ºA" onkeydown="if(event.key==='Enter') addTask()">
+    </div>
+    <div class="frow fgroup">
+      <div>
+        <label class="flabel" for="task-pri-sel">Prioridad</label>
+        <select class="finput" id="task-pri-sel" style="cursor:pointer;">
+          <option value="high">🔴 Alta</option>
+          <option value="medium" selected>🟡 Media</option>
+          <option value="low">🟢 Baja</option>
+        </select>
+      </div>
+      <div>
+        <label class="flabel" for="task-due">Fecha límite</label>
+        <input class="finput" id="task-due" type="date">
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:4px;">
+      <button onclick="addTask()" style="flex:1;padding:11px;background:var(--accent-d);color:white;border:none;border-radius:8px;font-family:var(--font);font-size:14px;font-weight:700;cursor:pointer;">Añadir tarea</button>
+      <button onclick="closeAddTask()" style="padding:11px 18px;background:var(--surface);color:var(--text-2);border:0.5px solid var(--border);border-radius:8px;font-family:var(--font);font-size:14px;font-weight:600;cursor:pointer;">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<!-- ═══════════════════════════════════════════
+     JAVASCRIPT
+═══════════════════════════════════════════ -->
+<script>
+/* ══════════════════════════════════════════
+   ① SUPABASE CONFIG
+   ─────────────────────────────────────────
+   Para activar la base de datos real:
+   1. Crea un proyecto en https://supabase.com
+   2. Pega tu Project URL y anon key abajo
+   3. Cambia USE_MOCK a false
+   ─────────────────────────────────────────
+   Con USE_MOCK = true todo funciona offline
+   usando datos de demostración en memoria.
+══════════════════════════════════════════ */
+const SUPABASE_URL  = 'YOUR_SUPABASE_URL';   // ← Reemplaza con tu URL
+const SUPABASE_KEY  = 'YOUR_ANON_KEY';       // ← Reemplaza con tu anon key
+const USE_MOCK      = (!SUPABASE_URL || SUPABASE_URL === 'YOUR_SUPABASE_URL');
+
+let supabaseClient = null;
+if (!USE_MOCK) {
+  supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+}
+
+/* ══════════════════════════════════════════
+   ② MOCK DATA
+══════════════════════════════════════════ */
+const MOCK_USER = {
+  id: 'mock-uid-001',
+  email: 'demo@aulapro.es',
+  full_name: 'Ana García Ruiz',
+  school: 'IES Ejemplo',
+  subject: 'Matemáticas',
+  initials: 'AG'
+};
+
+const MOCK_SCHEDULE = [
+  { time: '08:30', end: '09:25', subject: '3ºA — Matemáticas', room: 'Aula 12', status: 'done' },
+  { time: '09:30', end: '10:25', subject: '4ºB — Álgebra',     room: 'Aula 7',  status: 'current' },
+  { time: '11:00', end: '11:55', subject: '2ºC — Geometría',   room: 'Aula 15', status: 'next' },
+  { time: '12:00', end: '12:55', subject: 'Reunión CCP',       room: 'Sala reuniones', status: 'meeting' },
+];
+
+let MOCK_TASKS = [
+  { id: 't1', text: 'Corregir exámenes 3ºA',       priority: 'high',   done: false },
+  { id: 't2', text: 'Preparar UD Fracciones',       priority: 'medium', done: false },
+  { id: 't3', text: 'Correo familia Marco R.',      priority: 'high',   done: false },
+  { id: 't4', text: 'Actualizar notas Séneca',      priority: 'low',    done: true  },
+  { id: 't5', text: 'Revisar programación anual',   priority: 'medium', done: false },
+];
+
+const MOCK_EVENTS = [
+  { name: 'Entrega notas 1ª Eval.', date: 'Mañana, 09:00',  type: 'deadline', color: '#ef4444' },
+  { name: 'Reunión Orientación',    date: 'Jue, 11:30',     type: 'meeting',  color: '#f59e0b' },
+  { name: 'Simulacro EBAU',        date: 'Vie, todo el día',type: 'event',    color: '#3b82f6' },
+  { name: 'Claustro trimestral',   date: 'Próx. lunes',     type: 'meeting',  color: '#8b5cf6' },
+];
+
+const MOCK_ALERTS = [
+  { name: 'Marco R. — 3ºA',   desc: 'Dificultades con fracciones',   bg: '#fff7ed', bdc: '#f59e0b', nc: '#92400e', dc: '#78350f' },
+  { name: 'Lucía P. — 4ºB',   desc: '3 faltas sin justificar',       bg: '#fef2f2', bdc: '#ef4444', nc: '#991b1b', dc: '#7f1d1d' },
+];
+
+const MOCK_NOTIFS = [
+  { id: 'n1', text: 'Entrega de notas 1ª Evaluación mañana a las 9:00', time: 'Hace 5 min', unread: true, icon: 'bell' },
+  { id: 'n2', text: 'Marco R. tiene 2 evaluaciones pendientes de corrección', time: 'Hace 1 h', unread: true, icon: 'alert-triangle' },
+  { id: 'n3', text: 'Reunión CCP confirmada para las 12:00', time: 'Hace 2 h', unread: true, icon: 'calendar' },
+  { id: 'n4', text: 'Nueva circular del equipo directivo disponible', time: 'Ayer', unread: false, icon: 'file-text' },
+  { id: 'n5', text: 'Informe de absentismo actualizado para 4ºB', time: 'Ayer', unread: false, icon: 'users' },
+];
+
+/* ══════════════════════════════════════════
+   ③ STATE
+══════════════════════════════════════════ */
+let currentUser   = null;
+let clockInterval = null;
+let notifOpen     = false;
+let tasks         = [...MOCK_TASKS];
+let notifs        = [...MOCK_NOTIFS];
+
+/* ══════════════════════════════════════════
+   ④ AUTH LAYER
+══════════════════════════════════════════ */
+async function handleLogin() {
+  const email = document.getElementById('l-email').value.trim();
+  const pass  = document.getElementById('l-pass').value;
+  if (!email || !pass) { showAuthError('Rellena tu correo y contraseña.'); return; }
+
+  const btn = document.getElementById('btn-login');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spin"></span>&nbsp;Entrando…';
+
+  if (USE_MOCK) {
+    await delay(700); // Simulated network latency
+    currentUser = { ...MOCK_USER, email };
+    enterApp();
+  } else {
+    const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password: pass });
+    if (error) {
+      showAuthError(error.message || 'Credenciales incorrectas.');
+      btn.disabled = false; btn.innerHTML = 'Entrar al aula →';
+      return;
+    }
+    currentUser = { email: data.user.email, ...MOCK_USER }; // Se reemplaza con perfil real en Paso 3b
+    enterApp();
+  }
+}
+
+async function handleRegister() {
+  const email = document.getElementById('r-email').value.trim();
+  const pass  = document.getElementById('r-pass').value;
+  const name  = document.getElementById('r-nombre').value.trim();
+  if (!name || !email || !pass) { toast('⚠️ Rellena todos los campos obligatorios'); return; }
+  if (pass.length < 8)          { toast('⚠️ La contraseña debe tener al menos 8 caracteres'); return; }
+
+  const btn = document.getElementById('btn-reg');
+  btn.disabled = true; btn.innerHTML = '<span class="spin"></span>&nbsp;Creando cuenta…';
+
+  if (USE_MOCK) {
+    await delay(800);
+    currentUser = { ...MOCK_USER, email, full_name: name + ' ' + (document.getElementById('r-apell').value || '') };
+    enterApp();
+    toast('✅ Cuenta creada — conecta Supabase para persistir los datos');
+  } else {
+    const { data, error } = await supabaseClient.auth.signUp({
+      email, password: pass,
+      options: {
+        data: {
+          full_name: name + ' ' + document.getElementById('r-apell').value,
+          school:    document.getElementById('r-centro').value,
+          subject:   document.getElementById('r-espec').value
+        }
+      }
+    });
+    if (error) { toast('❌ ' + error.message); btn.disabled = false; btn.innerHTML = 'Crear cuenta'; return; }
+    toast('✅ ¡Cuenta creada! Revisa tu correo para confirmar la cuenta.');
+    btn.disabled = false; btn.innerHTML = 'Crear cuenta';
+  }
+}
+
+async function handleLogout() {
+  if (!USE_MOCK && supabaseClient) { await supabaseClient.auth.signOut(); }
+  currentUser = null;
+  tasks = [...MOCK_TASKS];
+  stopClock();
+  showScreen('auth');
+  toast('Sesión cerrada correctamente');
+  const btn = document.getElementById('btn-login');
+  btn.disabled = false; btn.innerHTML = 'Entrar al aula →';
+  hideAuthError();
+}
+
+/* ══════════════════════════════════════════
+   ⑤ APP INIT
+══════════════════════════════════════════ */
+function enterApp() {
+  showScreen('app');
+  updateUserUI();
+  renderDashboard();
+  startClock();
+  renderNotifBadge();
+  nav('dashboard');
+  toast('¡Bienvenida, ' + (currentUser.full_name || currentUser.email).split(' ')[0] + '! 👋');
+  if (!USE_MOCK && supabaseClient) loadRealTasks();
+}
+
+function updateUserUI() {
+  if (!currentUser) return;
+  const initials = getInitials(currentUser.full_name || currentUser.email);
+  const name = currentUser.full_name || currentUser.email;
+  document.getElementById('sb-av').textContent    = initials;
+  document.getElementById('top-av').textContent   = initials;
+  document.getElementById('prof-av').textContent  = initials;
+  document.getElementById('sb-name').textContent  = name;
+  document.getElementById('sb-sub').textContent   = (currentUser.subject || '') + (currentUser.school ? ' · ' + currentUser.school : '');
+  document.getElementById('prof-name').textContent= name;
+  document.getElementById('prof-sub').textContent = currentUser.subject || '';
+  document.getElementById('prof-email').textContent = currentUser.email || '';
+  // Set today's date as default for new task
+  document.getElementById('task-due').valueAsDate = new Date();
+}
+
+/* ══════════════════════════════════════════
+   ⑥ REAL DATA LAYER (Supabase)
+══════════════════════════════════════════ */
+async function loadRealTasks() {
+  const { data, error } = await supabaseClient
+    .from('tasks')
+    .select('*')
+    .eq('teacher_id', currentUser.id)
+    .order('created_at', { ascending: false });
+  if (!error && data) { tasks = data; renderTasks(); updateTasksStat(); }
+}
+
+async function persistTask(task) {
+  if (USE_MOCK) return;
+  await supabaseClient.from('tasks').insert({ ...task, teacher_id: currentUser.id });
+}
+
+async function updateTaskInDB(task) {
+  if (USE_MOCK) return;
+  await supabaseClient.from('tasks').update({ done: task.done }).eq('id', task.id);
+}
+
+/* ══════════════════════════════════════════
+   ⑦ DASHBOARD RENDER
+══════════════════════════════════════════ */
+function renderDashboard() {
+  renderSessionBanner();
+  renderSchedule();
+  renderEvents();
+  renderAlerts();
+  renderTasks();
+  updateTasksStat();
+}
+
+/* Session banner */
+function renderSessionBanner() {
+  const now = new Date();
+  const currentSlot = MOCK_SCHEDULE.find(s => s.status === 'current');
+  const banner = document.getElementById('session-banner');
+
+  if (currentSlot) {
+    const progress = getClassProgress(currentSlot.time, currentSlot.end, now);
+    const remaining = getRemainingMin(currentSlot.end, now);
+    banner.innerHTML =
+      '<div class="session-banner">' +
+        '<div class="session-pulse"></div>' +
+        '<div style="flex:1;min-width:0;">' +
+          '<div style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.7);letter-spacing:0.5px;text-transform:uppercase;">En sesión ahora</div>' +
+          '<div style="font-size:15px;font-weight:800;color:white;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + currentSlot.subject + '</div>' +
+          '<div style="font-size:11.5px;color:rgba(255,255,255,0.6);margin-top:1px;">' + currentSlot.room + ' · Hasta las ' + currentSlot.end + '</div>' +
+        '</div>' +
+        '<div style="text-align:right;flex-shrink:0;">' +
+          '<div style="font-size:20px;font-weight:800;color:white;line-height:1;">' + remaining + 'min</div>' +
+          '<div style="font-size:11px;color:rgba(255,255,255,0.6);margin-bottom:6px;">restantes</div>' +
+          '<div class="prog-bar"><div class="prog-fill" style="width:' + progress + '%;"></div></div>' +
+        '</div>' +
+        '<button onclick="nav(\'classroom\')" style="padding:9px 16px;background:rgba(255,255,255,0.18);color:white;border:0.5px solid rgba(255,255,255,0.3);border-radius:8px;font-family:var(--font);font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0;transition:background 0.2s;" onmouseover="this.style.background=\'rgba(255,255,255,0.28)\'" onmouseout="this.style.background=\'rgba(255,255,255,0.18)\'">Abrir aula →</button>' +
+      '</div>';
+  } else {
+    const next = MOCK_SCHEDULE.find(s => s.status === 'next');
+    banner.innerHTML =
+      '<div class="no-session-banner">' +
+        '<i data-lucide="coffee" style="width:18px;height:18px;color:#475569;flex-shrink:0;"></i>' +
+        '<div style="flex:1;">' +
+          '<div style="font-size:13px;font-weight:700;color:#e2e8f0;">Sin clase en este momento</div>' +
+          (next ? '<div style="font-size:12px;color:#64748b;margin-top:1px;">Próxima: ' + next.subject + ' a las ' + next.time + '</div>' : '') +
+        '</div>' +
+      '</div>';
+  }
+  setTimeout(() => lucide.createIcons(), 30);
+}
+
+/* Schedule */
+function renderSchedule() {
+  const list = document.getElementById('schedule-list');
+  const colors = { done: 'var(--ok)', current: 'var(--accent-d)', next: '#e2e8f0', meeting: 'var(--warn)' };
+  const labels = { done: '✓ Completada', current: '● En curso', next: 'Próxima', meeting: 'Reunión' };
+  const lblColors = { done: 'var(--ok)', current: 'var(--accent-d)', next: 'var(--text-3)', meeting: 'var(--warn)' };
+
+  list.innerHTML = MOCK_SCHEDULE.map(s =>
+    '<div class="sch-item' + (s.status === 'current' ? ' current-class' : '') + '" onclick="toast(\'' + s.subject + ' · ' + s.room + '\')">' +
+      '<div class="sch-stripe" style="background:' + colors[s.status] + ';"></div>' +
+      '<div class="sch-info">' +
+        '<div class="sch-subj">' + s.subject + '</div>' +
+        '<div class="sch-room">' + s.room + '</div>' +
+      '</div>' +
+      '<div class="sch-meta">' +
+        '<div class="sch-time">' + s.time + '</div>' +
+        '<div class="sch-st" style="color:' + lblColors[s.status] + ';">' + labels[s.status] + '</div>' +
+      '</div>' +
+    '</div>'
+  ).join('');
+}
+
+/* Events */
+function renderEvents() {
+  const list = document.getElementById('events-list');
+  list.innerHTML = MOCK_EVENTS.map((ev, i) =>
+    '<div class="ev-item" onclick="toast(\'' + ev.name + ' — ' + ev.date + '\')">' +
+      '<div class="ev-dot-col">' +
+        '<div class="ev-dot" style="background:' + ev.color + ';"></div>' +
+        (i < MOCK_EVENTS.length - 1 ? '<div class="ev-line"></div>' : '') +
+      '</div>' +
+      '<div class="ev-info">' +
+        '<div class="ev-name">' + ev.name + '</div>' +
+        '<div class="ev-time">' + ev.date + '</div>' +
+      '</div>' +
+    '</div>'
+  ).join('');
+}
+
+/* Alerts */
+function renderAlerts() {
+  const list = document.getElementById('alerts-list');
+  list.innerHTML = MOCK_ALERTS.map(a =>
+    '<div class="alert-card" style="background:' + a.bg + ';border-color:' + a.bdc + ';" onclick="toast(\'' + a.name + '\') ">' +
+      '<div class="an" style="color:' + a.nc + ';">' + a.name + '</div>' +
+      '<div class="ad" style="color:' + a.dc + ';">' + a.desc + '</div>' +
+    '</div>'
+  ).join('');
+  document.getElementById('alerts-count').textContent = MOCK_ALERTS.length;
+}
+
+/* Tasks */
+function renderTasks() {
+  const list = document.getElementById('tasks-list');
+  const priColors = { high: 'var(--danger)', medium: 'var(--warn)', low: 'var(--ok)' };
+
+  list.innerHTML = tasks.map(t =>
+    '<div class="task-item" onclick="toggleTask(\'' + t.id + '\')">' +
+      '<div class="task-cb' + (t.done ? ' checked' : '') + '">' +
+        (t.done ? '<i data-lucide="check" style="width:10px;height:10px;color:white;"></i>' : '') +
+      '</div>' +
+      '<div class="task-txt' + (t.done ? ' done' : '') + '">' + t.text + '</div>' +
+      '<div class="task-pri" style="background:' + priColors[t.priority] + ';"></div>' +
+    '</div>'
+  ).join('');
+
+  setTimeout(() => lucide.createIcons(), 30);
+}
+
+function updateTasksStat() {
+  const pending = tasks.filter(t => !t.done).length;
+  const total   = tasks.length;
+  const high    = tasks.filter(t => !t.done && t.priority === 'high').length;
+  document.getElementById('stat-tasks').textContent       = pending;
+  document.getElementById('stat-tasks-hint').textContent  = high + ' de alta prioridad';
+  document.getElementById('tasks-done-label').textContent = (total - pending) + '/' + total + ' hechas';
+}
+
+function toggleTask(id) {
+  const task = tasks.find(t => t.id === id);
+  if (!task) return;
+  task.done = !task.done;
+  renderTasks();
+  updateTasksStat();
+  updateTaskInDB(task);
+  toast(task.done ? '✓ Tarea completada' : 'Tarea marcada como pendiente');
+}
+
+/* ══════════════════════════════════════════
+   ⑧ ADD TASK
+══════════════════════════════════════════ */
+function openAddTask() {
+  document.getElementById('task-text-input').value = '';
+  document.getElementById('task-pri-sel').value = 'medium';
+  document.getElementById('task-modal-overlay').classList.add('open');
+  setTimeout(() => document.getElementById('task-text-input').focus(), 100);
+}
+
+function closeAddTask(e) {
+  if (e && e.target !== document.getElementById('task-modal-overlay')) return;
+  document.getElementById('task-modal-overlay').classList.remove('open');
+}
+
+function addTask() {
+  const text = document.getElementById('task-text-input').value.trim();
+  if (!text) { toast('⚠️ Escribe una descripción para la tarea'); return; }
+
+  const newTask = {
+    id:       't' + Date.now(),
+    text,
+    priority: document.getElementById('task-pri-sel').value,
+    done:     false,
+    due_date: document.getElementById('task-due').value || null
+  };
+
+  tasks.unshift(newTask);
+  persistTask(newTask);
+  renderTasks();
+  updateTasksStat();
+  document.getElementById('task-modal-overlay').classList.remove('open');
+  toast('✅ Tarea añadida');
+}
+
+/* ══════════════════════════════════════════
+   ⑨ NOTIFICATIONS
+══════════════════════════════════════════ */
+function renderNotifBadge() {
+  const unread = notifs.filter(n => n.unread).length;
+  document.getElementById('notif-dot').style.display = unread > 0 ? 'block' : 'none';
+}
+
+function renderNotifPanel() {
+  const list = document.getElementById('notif-list');
+  list.innerHTML = notifs.map(n =>
+    '<div class="nd-item' + (n.unread ? ' unread' : '') + '" onclick="readNotif(\'' + n.id + '\')">' +
+      '<div style="display:flex;align-items:flex-start;gap:10px;">' +
+        '<div style="width:30px;height:30px;border-radius:8px;background:' + (n.unread ? 'rgba(99,102,241,0.12)' : 'var(--surface)') + ';display:flex;align-items:center;justify-content:center;flex-shrink:0;">' +
+          '<i data-lucide="' + n.icon + '" style="width:14px;height:14px;color:' + (n.unread ? 'var(--accent-d)' : 'var(--text-3)') + ';"></i>' +
+        '</div>' +
+        '<div style="flex:1;min-width:0;">' +
+          '<div style="font-size:13px;color:var(--text);line-height:1.45;font-weight:' + (n.unread ? '600' : '400') + ';">' + n.text + '</div>' +
+          '<div style="font-size:11px;color:var(--text-3);margin-top:4px;">' + n.time + '</div>' +
+        '</div>' +
+      '</div>' +
+    '</div>'
+  ).join('');
+  setTimeout(() => lucide.createIcons(), 30);
+}
+
+function toggleNotifs() {
+  notifOpen = !notifOpen;
+  document.getElementById('notif-overlay').classList.toggle('open', notifOpen);
+  document.getElementById('notif-drawer').classList.toggle('open', notifOpen);
+  if (notifOpen) renderNotifPanel();
+}
+
+function closeNotifs() {
+  notifOpen = false;
+  document.getElementById('notif-overlay').classList.remove('open');
+  document.getElementById('notif-drawer').classList.remove('open');
+}
+
+function readNotif(id) {
+  const n = notifs.find(x => x.id === id); if (!n) return;
+  n.unread = false;
+  renderNotifPanel();
+  renderNotifBadge();
+}
+
+function markAllRead() {
+  notifs.forEach(n => n.unread = false);
+  renderNotifPanel();
+  renderNotifBadge();
+  toast('Todas las notificaciones leídas');
+}
+
+/* ══════════════════════════════════════════
+   ⑩ PROFILE
+══════════════════════════════════════════ */
+function saveProfile() {
+  const nombre = document.getElementById('pf-nombre').value.trim();
+  const apell  = document.getElementById('pf-apell').value.trim();
+  const email  = document.getElementById('pf-email').value.trim();
+  const centro = document.getElementById('pf-centro').value.trim();
+  const espec  = document.getElementById('pf-espec').value.trim();
+
+  if (!nombre) { toast('⚠️ El nombre no puede estar vacío'); return; }
+
+  currentUser.full_name = nombre + (apell ? ' ' + apell : '');
+  currentUser.email     = email;
+  currentUser.school    = centro;
+  currentUser.subject   = espec;
+
+  updateUserUI();
+
+  if (!USE_MOCK && supabaseClient) {
+    supabaseClient.from('profiles').update({
+      full_name: currentUser.full_name, school: centro, subject: espec
+    }).eq('id', currentUser.id).then(() => toast('✅ Perfil guardado en Supabase'));
+    supabaseClient.auth.updateUser({ email });
+  } else {
+    toast('✅ Perfil actualizado — conecta Supabase para persistir');
+  }
+}
+
+/* ══════════════════════════════════════════
+   ⑪ SEARCH (básico — Paso 4 lo expande)
+══════════════════════════════════════════ */
+function handleSearch(q) {
+  if (!q) return;
+  // Stub — en Paso 4 se implementa búsqueda global contra Supabase
+  const filtered = tasks.filter(t => t.text.toLowerCase().includes(q.toLowerCase()));
+  if (filtered.length > 0) toast('🔍 ' + filtered.length + ' tarea(s) encontrada(s)');
+}
+
+/* ══════════════════════════════════════════
+   ⑫ NAVIGATION
+══════════════════════════════════════════ */
+function nav(sectionId) {
+  document.querySelectorAll('.sec').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-item[data-s]').forEach(n => n.classList.remove('active'));
+
+  const sec = document.getElementById('sec-' + sectionId);
+  if (sec) sec.classList.add('active');
+
+  const ni = document.querySelector('.nav-item[data-s="' + sectionId + '"]');
+  if (ni) ni.classList.add('active');
+
+  if (notifOpen) closeNotifs();
+  setTimeout(() => lucide.createIcons(), 50);
+}
+
+/* ══════════════════════════════════════════
+   ⑬ SIDEBAR
+══════════════════════════════════════════ */
+let sidebarMini = false;
+function toggleSidebar() {
+  sidebarMini = !sidebarMini;
+  document.getElementById('sidebar').classList.toggle('mini', sidebarMini);
+}
+
+/* ══════════════════════════════════════════
+   ⑭ CLOCK
+══════════════════════════════════════════ */
+function startClock() {
+  updateClock();
+  clockInterval = setInterval(updateClock, 15000);
+}
+function stopClock() {
+  if (clockInterval) { clearInterval(clockInterval); clockInterval = null; }
+}
+function updateClock() {
+  const now  = new Date();
+  const hr   = now.getHours();
+  const greeting = hr < 14 ? 'Buenos días' : hr < 21 ? 'Buenas tardes' : 'Buenas noches';
+  const firstName = (currentUser?.full_name || 'Docente').split(' ')[0];
+
+  const clockEl    = document.getElementById('clock');
+  const greetEl    = document.getElementById('dash-greeting');
+  const dateEl     = document.getElementById('dash-date');
+
+  if (clockEl) clockEl.textContent = now.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+  if (greetEl) greetEl.textContent = greeting + ', ' + firstName + ' 👋';
+  if (dateEl) {
+    const d = now.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+    dateEl.textContent = d.charAt(0).toUpperCase() + d.slice(1);
+  }
+}
+
+/* ══════════════════════════════════════════
+   ⑮ SCREEN SYSTEM
+══════════════════════════════════════════ */
+function showScreen(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + name).classList.add('active');
+}
+
+function switchTab(tab) {
+  const isLogin = tab === 'login';
+  document.getElementById('form-login').style.display = isLogin ? 'block' : 'none';
+  document.getElementById('form-reg').style.display   = isLogin ? 'none'  : 'block';
+  document.getElementById('tab-login').classList.toggle('active', isLogin);
+  document.getElementById('tab-reg').classList.toggle('active', !isLogin);
+  hideAuthError();
+}
+
+/* ══════════════════════════════════════════
+   ⑯ UTILS
+══════════════════════════════════════════ */
+function showAuthError(msg) {
+  const el = document.getElementById('auth-error');
+  el.textContent = msg; el.style.display = 'block';
+}
+function hideAuthError() {
+  document.getElementById('auth-error').style.display = 'none';
+}
+
+let _toastTimer = null;
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('on');
+  if (_toastTimer) clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => el.classList.remove('on'), 3200);
+}
+
+function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+function getInitials(name) {
+  if (!name) return '?';
+  const parts = name.trim().split(' ');
+  return (parts[0][0] + (parts[1] ? parts[1][0] : '')).toUpperCase();
+}
+
+function getClassProgress(start, end, now) {
+  const toMin = s => { const [h,m] = s.split(':').map(Number); return h * 60 + m; };
+  const s = toMin(start), e = toMin(end), n = now.getHours() * 60 + now.getMinutes();
+  return Math.min(100, Math.max(0, Math.round(((n - s) / (e - s)) * 100)));
+}
+
+function getRemainingMin(end, now) {
+  const [h, m] = end.split(':').map(Number);
+  const endMin = h * 60 + m;
+  const nowMin = now.getHours() * 60 + now.getMinutes();
+  return Math.max(0, endMin - nowMin);
+}
+
+/* ══════════════════════════════════════════
+   ⑰ INIT
+══════════════════════════════════════════ */
+document.addEventListener('DOMContentLoaded', () => {
+  lucide.createIcons();
+
+  // PWA Service Worker
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  }
+
+  // Supabase auth listener (real mode)
+  if (!USE_MOCK && supabaseClient) {
+    supabaseClient.auth.onAuthStateChange((_event, session) => {
+      if (session?.user && !currentUser) {
+        currentUser = {
+          id: session.user.id,
+          email: session.user.email,
+          full_name: session.user.user_metadata?.full_name || 'Docente',
+          school:  session.user.user_metadata?.school  || '',
+          subject: session.user.user_metadata?.subject || ''
+        };
+        enterApp();
+      }
+    });
+  }
+
+  // Keyboard shortcuts
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') { closeNotifs(); closeAddTask(null); }
+    if (e.key === 'Enter' && e.target.classList.contains('nav-item')) e.target.click();
+    if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+      e.preventDefault();
+      document.getElementById('global-search').focus();
+    }
+  });
+
+  // Mark mode in footer if mock
+  if (USE_MOCK) {
+    const hint = document.querySelector('.sb-bottom div');
+    if (hint) hint.textContent = 'v1.0 · Modo demo activo';
+  }
+});
+</script>
+
+</body>
+</html>

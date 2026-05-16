@@ -1,0 +1,37 @@
+{
+  "name": "Aula Pro — Gestión Docente",
+  "short_name": "Aula Pro",
+  "description": "Plataforma integral de gestión docente para el aula del siglo XXI",
+  "start_url": "/index.html",
+  "display": "standalone",
+  "background_color": "#0d1117",
+  "theme_color": "#0d1117",
+  "orientation": "landscape-primary",
+  "lang": "es",
+  "icons": [
+    { "src": "icons/icon-72.png",   "sizes": "72x72",   "type": "image/png" },
+    { "src": "icons/icon-96.png",   "sizes": "96x96",   "type": "image/png" },
+    { "src": "icons/icon-128.png",  "sizes": "128x128", "type": "image/png" },
+    { "src": "icons/icon-144.png",  "sizes": "144x144", "type": "image/png" },
+    { "src": "icons/icon-192.png",  "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icons/icon-512.png",  "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ],
+  "categories": ["education", "productivity"],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "Dashboard",
+      "short_name": "Inicio",
+      "description": "Panel de control docente",
+      "url": "/index.html#dashboard",
+      "icons": [{ "src": "icons/icon-96.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "Gestor de Aula",
+      "short_name": "Aula Live",
+      "description": "Vista de aula en directo",
+      "url": "/index.html#classroom",
+      "icons": [{ "src": "icons/icon-96.png", "sizes": "96x96" }]
+    }
+  ]
+}
